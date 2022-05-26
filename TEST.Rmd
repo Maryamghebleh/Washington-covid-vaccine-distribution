@@ -82,16 +82,13 @@ map_covid<-my_map %>% left_join(covid,by=c("COUNTY"="COUNTY"))
 
 ##data on the map
 
-
-## Second dose
-
-p1<-plot_ly(map_covid) %>% 
+plot_ly(map_covid) %>% 
   add_sf(
     geojson=~COUNTY,
     color = ~COUNTY, 
     split = ~ COUNTY, 
     span = I(1),
-    text = ~paste('County: ', COUNTY,
+    text = ~paste('County: ', COUNTY,#counties
                    '<br>',
       'Second dose_plus65: ', Deltafully_65,#distribution of vaccines for people who had not second dose (upper 65 years old)
       '<br>',
@@ -106,9 +103,7 @@ p1<-plot_ly(map_covid) %>%
   ) %>%
   layout(showlegend = TRUE) 
 
-##export HTML
 
-#saveWidget(ggplotly(p1), file = "Covid_map.html")
 
 
 
