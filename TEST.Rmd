@@ -1,0 +1,121 @@
+---
+title: "covid"
+author: "Maryam GHEBLEH"
+date: "26 mai 2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(ggplot2)
+library(tmaptools)
+library(dplyr)
+library(leaflet)
+library(sf)
+library(plotly)
+library(albersusa)
+library(cartogram)
+library(htmlwidgets)
+
+
+
+knitr::opts_chunk$set(echo = TRUE)
+```
+##Load the data and distribute the vaccine according to the age
+
+
+Based on the age, I distributed 1 million vaccines.
+
+The priority of the vaccines is explained below:
+
+First) The people who had upper 65 years old and didn't have the second dose,
+second)The people who had upper 65 years old and didn't have the booster dose,
+third)The people who had the age between 18 to 65 years old and didn't have the second dose,
+fourth)The people who had the age between 18 to 65 years old and didn't have the booster dose.
+
+
+
+
+```{r }
+
+##Load data
+covid<-read.csv("C:/Users/Mgheblehgoydaragh/Desktop/Test/county_level_vaccination_data_for_washington.csv",sep = ",",na.strings=c("","NaN","NA") )
+
+##getting geographic data
+
+##load shapefile of the washington
+my_map<-st_read("C:/Users/Mgheblehgoydaragh/Desktop/Test/Washington_Counties_with_Natural_Shoreline___washsh_area/Washington_Counties_with_Natural_Shoreline___washsh_area.shp")
+
+
+
+## the priority with age plus 65
+##age plus 65
+covid<-covid %>%
+  mutate(Delta_65=People.65..with.at.least.1.Dose...Resident - Population...65.Years.of.Age.with.a.First.Booster.Dose,## diffrences between first dose and third dose
+    Deltafully_65=People.65..with.at.least.1.Dose...Resident - People.65..Fully.Vaccinated...Resident,## diffrences between first dose and second dose
+    boost_65= People.65..Fully.Vaccinated...Resident-Population...65.Years.of.Age.with.a.First.Booster.Dose)## diffrences between second dose and third dose
+
+
+
+
+##age 18-65
+covid<-covid %>%
+  mutate(Delta_18=People.18..with.at.least.1.Dose...Resident - Population...18.Years.of.Age.with.a.First.Booster.Dose,## diffrences between first dose and third dose
+    Deltafully_18=People.18..with.at.least.1.Dose...Resident - People.18..Fully.Vaccinated...Resident,## diffrences between first dose and second dose
+    boost_18= People.65..Fully.Vaccinated...Resident-Population...18.Years.of.Age.with.a.First.Booster.Dose,##diffrences between second dose and third dose
+    ratio_18= round(202314*boost_18/sum(boost_18)))## The remaining vaccines for third dose are low (202314), then I distributed the remaining vaccines based on the number of the people who didn't do booster vaccine in all counties
+
+
+
+```
+
+## Showing the results on the maps
+
+
+
+```{r }
+
+
+##join: combining data with the map
+
+map_covid<-my_map %>% left_join(covid,by=c("COUNTY"="COUNTY"))
+
+
+##data on the map
+
+
+## Second dose
+
+p1<-plot_ly(map_covid) %>% 
+  add_sf(
+    geojson=~COUNTY,
+    color = ~COUNTY, 
+    split = ~ COUNTY, 
+    span = I(1),
+    text = ~paste('County: ', COUNTY,
+                   '<br>',
+      'Second dose_plus65: ', Deltafully_65,#distribution of vaccines for people who had not second dose (upper 65 years old)
+      '<br>',
+      'Booster_plus65: ', boost_65,#distribution of vaccines for people who had not booster dose(upper 65 years old)
+      '<br>',
+      'Second dose_18to65: ', Deltafully_18,#distribution of vaccines for people who had not second dose(between 18 and 65 years old)
+      '<br>',
+      'Booster_18to65: ', ratio_18),#distribution of vaccines for people who had not booster dose(between 18 and 65 years old)
+    type='scatter',
+    hoverinfo = "text",
+    hoveron = "fills"
+  ) %>%
+  layout(showlegend = TRUE) 
+
+##export HTML
+
+#saveWidget(ggplotly(p1), file = "Covid_map.html")
+
+
+
+
+
+```
+
+
+
+
